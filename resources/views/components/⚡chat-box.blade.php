@@ -120,7 +120,7 @@ new class extends Component {
                 {{-- Suggestion chips --}}
                 <div class="flex flex-wrap gap-2 justify-center max-w-sm">
                     @foreach (['What is Laravel 13?', 'Explain Livewire 4', 'Write a PHP function', 'Tell me a fun fact'] as $suggestion)
-                        <button
+                        <button wire:click="$set('input', '{{ $suggestion }}')"
                             class="cursor-pointer px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:border-violet-500 hover:text-white transition-all duration-200">{{ $suggestion }}</button>
                     @endforeach
                 </div>
@@ -245,29 +245,82 @@ new class extends Component {
         font-size: 0.85rem;
     }
 
-    .markdown-body pre {
-        background: #000;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.75rem 0;
+    .markdown-body .code-block pre {
+        margin: 0;
+        padding: 0;
+        background: #09090b;
         overflow-x: auto;
     }
 
-    .markdown-body pre code {
+    .markdown-body .code-block pre code {
         background: transparent;
-        padding: 0;
+        padding: 1rem;
         border-radius: 0;
         display: block;
+        line-height: 1.6;
         white-space: pre;
+        font-size: 0.875rem;
     }
 </style>
 
 @script
     <script>
+        const renderer = new window.marked.Renderer();
+        renderer.code = function(token) {
+            const code = (token.text || '').replace(/^\n+|\n+$/g, '');
+            const language = (token.lang || 'plaintext').trim();
+
+            return `<div class="code-block my-3 rounded-xl overflow-hidden border border-zinc-700">
+                <div class="flex items-center justify-between px-4 py-2 bg-zinc-800 border-b border-zinc-700">
+                    <span class="text-xs text-zinc-400 font-mono">${language}</span>
+
+                    <button type="button" data-copy-code class="text-xs text-zinc-400 hover:text-white px-2 py-1 rounded hover:bg-zinc-700 transition-colors">Copy</button>
+                    </div>
+
+                <pre class="!m-0 !rounded-none bg-zinc-900 overflow-x-auto"><code class="hljs language-${language} block p-4 text-sm text-zinc-100 font-mono leading-relaxed">${code}</code></pre></div>`;
+        };
+
+
+        window.marked.use({
+            renderer,
+            breaks: true,
+            gfm: true,
+        });
+
         // Markdown
         window.renderMarkdown = function(text) {
-            return DOMPurify.sanitize(window.marked.parse(text || ''));
-        }
+            const html = DOMPurify.sanitize(window.marked.parse(text || ''));
+
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.code-block pre code').forEach((block) => {
+                    if (!window.hljs || block.dataset.highlighted) {
+                        return;
+                    }
+
+                    window.hljs.highlightElement(block);
+                });
+            });
+
+            return html;
+        };
+
+        // Copy Button Click
+        document.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-copy-code]');
+
+            if (!button) {
+                return;
+            }
+
+            const code = button.closest('.code-block')?.querySelector('code')?.innerText || '';
+
+            await navigator.clipboard.writeText(code);
+            button.innerText = 'Copied';
+
+            setTimeout(() => {
+                button.innerText = 'Copy';
+            }, 2000);
+        });
 
         Alpine.data('chatStream', () => ({
             streamingText: '',

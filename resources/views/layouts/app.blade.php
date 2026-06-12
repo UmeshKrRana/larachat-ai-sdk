@@ -9,6 +9,13 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Highlight CSS --}}
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/atom-one-dark.min.css">
+
+    {{-- Highlight JS --}}
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+
     {{-- Marked js cdn --}}
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
